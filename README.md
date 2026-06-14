@@ -106,6 +106,8 @@ WHISPER/
 ├── splunk_app/whisper/
 │   ├── default/{app.conf, inputs.conf}
 │   └── appserver/static/dashboard.html
+├── docs/
+│   └── mcp_integration_guide_1.md     # Splunk MCP integration guide & references
 ├── run_whisper.py               # One-command launcher for all components
 ├── whisper_cli.py                # Developer CLI tool
 ├── architecture.png
