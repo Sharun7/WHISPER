@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WHISPER — Predictive Incident Prevention</title>
+    
+    <!-- Google Fonts & Chart.js -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #0b0c10;
+            --panel-bg: rgba(22, 26, 35, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #eef1f6;
+            --text-secondary: #8f9bb3;
+            
+            /* Glow Palette */
+            --cyan-glow: #00f0ff;
+            --cyan-dim: rgba(0, 240, 255, 0.15);
+            --green-glow: #39ff14;
+            --green-dim: rgba(57, 255, 20, 0.15);
+            --amber-glow: #ffb700;
+            --amber-dim: rgba(255, 183, 0, 0.15);
+            --crimson-glow: #ff0055;
+            --crimson-dim: rgba(255, 0, 85, 0.15);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 240, 255, 0.03) 0%, transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(255, 0, 85, 0.03) 0%, transparent 40%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.01);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: rgba(11, 12, 16, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-tag {
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, #00f0ff, #ff0055);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+        }
+
+        .heartbeat-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--green-glow);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--green-glow);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(57, 255, 20, 0); }
+            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(57, 255, 20, 0); }
+        }
+
+        .meta-status {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-badge {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-badge span.value {
+            color: var(--cyan-glow);
+            font-weight: 600;
+            text-shadow: 0 0 5px var(--cyan-glow);
+        }
+
+        .status-badge.savings {
+            border-color: var(--green-glow);
+        }
+        .status-badge.savings span.value {
+            color: var(--green-glow);
+            text-shadow: 0 0 5px var(--green-glow);
+        }
+
+        /* Dashboard Grid Layout */
+        .container {
+            display: grid;
+            grid-template-columns: 380px 1fr 380px;
+            gap: 25px;
+            padding: 30px 40px;
+            flex-grow: 1;
+            max-width: 1800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Glassmorphic Panel Base */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(15px);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 12px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Left Column: Alerts & Approvals */
+        .approval-queue {
+            overflow-y: auto;
+            max-height: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .no-alerts {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            height: 250px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .no-alerts svg {
+            width: 48px;
+            height: 48px;
+            stroke: var(--text-secondary);
+            opacity: 0.3;
+        }
+
+        .approval-card {
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+            animation: card-alert-pulse 2.5s infinite;
+        }
+
+        @keyframes card-alert-pulse {
+            0% { border-color: rgba(255, 183, 0, 0.2); box-shadow: 0 0 5px rgba(255, 183, 0, 0.05); }
+            50% { border-color: rgba(255, 183, 0, 0.5); box-shadow: 0 0 15px rgba(255, 183, 0, 0.15); }
+            100% { border-color: rgba(255, 183, 0, 0.2); box-shadow: 0 0 5px rgba(255, 183, 0, 0.05); }
+        }
+
+        .approval-card.critical {
+            animation: card-critical-pulse 1.8s infinite;
+        }
+
+        @keyframes card-critical-pulse {
+            0% { border-color: rgba(255, 0, 85, 0.2); box-shadow: 0 0 5px rgba(255, 0, 85, 0.05); }
+            50% { border-color: rgba(255, 0, 85, 0.6); box-shadow: 0 0 15px rgba(255, 0, 85, 0.2); }
+            100% { border-color: rgba(255, 0, 85, 0.2); box-shadow: 0 0 5px rgba(255, 0, 85, 0.05); }
+        }
+
+        .approval-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge-type {
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        .badge-type.warning { background: var(--amber-dim); color: var(--amber-glow); }
+        .badge-type.critical { background: var(--crimson-dim); color: var(--crimson-glow); }
+
+        .time-counter {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--crimson-glow);
+        }
+
+        .approval-card-title {
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .approval-card-desc {
+            font-size: 12px;
+            color: var(--text-secondary);
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            white-space: pre-wrap;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .approval-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .btn {
+            flex-grow: 1;
+            padding: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: none;
+            outline: none;
+        }
+
+        .btn-approve {
+            background: var(--green-glow);
+            color: #0b0c10;
+            box-shadow: 0 0 10px rgba(57, 255, 20, 0.2);
+        }
+        .btn-approve:hover {
+            box-shadow: 0 0 20px var(--green-glow);
+            transform: translateY(-2px);
+        }
+
+        .btn-dismiss {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+        }
+        .btn-dismiss:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        /* Center Column: Charts and Service Toggles */
+        .middle-panel {
+            grid-column: 2;
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .service-selector {
+            display: flex;
+            gap: 15px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 12px;
+        }
+
+        .service-tab {
+            flex-grow: 1;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            color: var(--text-secondary);
+        }
+
+        .service-tab:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .service-tab.active {
+            background: rgba(0, 240, 255, 0.08);
+            border-color: rgba(0, 240, 255, 0.2);
+            color: var(--cyan-glow);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.05);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-box {
+            background: rgba(22, 26, 35, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            height: 330px;
+        }
+
+        .chart-box-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-box-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .chart-value-highlight {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .chart-canvas-wrapper {
+            position: relative;
+            flex-grow: 1;
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Right Column: Console & Controls */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        /* Chat Widget */
+        .chat-widget {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            height: 400px;
+        }
+
+        .chat-history {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .chat-bubble {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+            max-width: 90%;
+            word-wrap: break-word;
+        }
+
+        .chat-bubble.agent {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            align-self: flex-start;
+            border-bottom-left-radius: 2px;
+        }
+
+        .chat-bubble.agent h3 {
+            font-size: 13px;
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--cyan-glow);
+        }
+
+        .chat-bubble.agent p, .chat-bubble.agent ul {
+            margin-bottom: 8px;
+        }
+
+        .chat-bubble.agent ul {
+            padding-left: 15px;
+        }
+
+        .chat-bubble.user {
+            background: var(--cyan-dim);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            color: var(--cyan-glow);
+            align-self: flex-end;
+            border-bottom-right-radius: 2px;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .chat-input {
+            flex-grow: 1;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 10px var(--cyan-dim);
+        }
+
+        .chat-send {
+            padding: 0 16px;
+            background: var(--cyan-glow);
+            color: #0b0c10;
+            font-weight: 700;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chat-send:hover {
+            box-shadow: 0 0 15px var(--cyan-glow);
+        }
+
+        /* Demo Injection controls */
+        .injector-panel {
+            background: rgba(255, 0, 85, 0.02);
+            border: 1px solid rgba(255, 0, 85, 0.1);
+        }
+
+        .injector-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn-inject {
+            background: rgba(255, 0, 85, 0.08);
+            border: 1px solid rgba(255, 0, 85, 0.2);
+            color: var(--crimson-glow);
+            font-size: 11px;
+            padding: 12px 10px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .btn-inject:hover {
+            background: var(--crimson-dim);
+            border-color: var(--crimson-glow);
+            box-shadow: 0 0 10px var(--crimson-dim);
+            transform: translateY(-1px);
+        }
+
+        .btn-inject span.title {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Prevented Incidents ledger */
+        .ledger-panel {
+            grid-column: 1 / span 3;
+            max-height: 250px;
+        }
+
+        .ledger-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            max-height: 180px;
+        }
+
+        .ledger-row {
+            display: grid;
+            grid-template-columns: 120px 150px 150px 1fr 120px;
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            align-items: center;
+        }
+
+        .ledger-row span.time {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-secondary);
+        }
+
+        .ledger-row span.service {
+            font-weight: 700;
+            color: var(--cyan-glow);
+        }
+
+        .ledger-row span.metric {
+            color: var(--amber-glow);
+            text-transform: uppercase;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .ledger-row span.savings {
+            font-weight: 700;
+            color: var(--green-glow);
+            text-align: right;
+        }
+
+        .whisper-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid;
+        }
+        .whisper-badge.ok    { color: var(--green-glow); border-color: var(--green-glow); background: var(--green-dim); }
+        .whisper-badge.warn  { color: var(--amber-glow); border-color: var(--amber-glow); background: var(--amber-dim); }
+        .whisper-badge .dot  { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+        .whisper-kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .whisper-kpi {
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+        .whisper-kpi .label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+        .whisper-kpi .value { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+        .whisper-kpi .value.green { color: var(--green-glow); }
+
+        .whisper-threat-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border-color);
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .whisper-sev {
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .whisper-sev.CRITICAL { background: var(--crimson-dim); color: var(--crimson-glow); }
+        .whisper-sev.HIGH     { background: var(--amber-dim);   color: var(--amber-glow); }
+        .whisper-sev.MEDIUM   { background: var(--amber-dim);   color: var(--amber-glow); }
+        .whisper-mitre { color: var(--cyan-glow); font-size: 11px; }
+        .whisper-empty { color: var(--text-secondary); font-size: 12px; text-align: center; padding: 16px 0; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="heartbeat-dot"></div>
+            <h1 class="logo-tag">WHISPER</h1>
+            <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1.5px; border-left: 1px solid var(--border-color); padding-left: 15px;">
+                Predictive Incident Prevention
+            </span>
+        </div>
+        
+        <div class="meta-status">
+            <div class="status-badge">
+                Splunk HEC: <span class="value">Active</span>
+            </div>
+            <div class="status-badge">
+                CDTSM-inspired: <span class="value">Zero-Shot Mode</span>
+            </div>
+            <span class="whisper-badge warn" id="badge-mcp">
+                <span class="dot"></span> MCP: checking...
+            </span>
+            <span class="whisper-badge warn" id="badge-sdk">
+                <span class="dot"></span> SDK: checking...
+            </span>
+            <div class="status-badge savings">
+                Prevented Outages: <span class="value" id="prevented-outages-count">0</span>
+            </div>
+            <div class="status-badge savings">
+                Total Saved: <span class="value" id="total-savings-value">$0</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <!-- Left: Co-Pilot Approval center -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber-glow)" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    Co-Pilot Approvals
+                </div>
+            </div>
+            <div class="approval-queue" id="approval-queue">
+                <!-- Alerts load here -->
+                <div class="no-alerts">
+                    <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                    No alerts or breaches forecasted.
+                </div>
+            </div>
+        </div>
+
+        <!-- Observability KPIs -->
+        <div class="panel" style="margin-top:0;">
+            <div class="panel-header">
+                <div class="panel-title" style="color: var(--green-glow)">
+                    Observability KPIs
+                </div>
+            </div>
+            <div class="whisper-kpi-grid">
+                <div class="whisper-kpi">
+                    <div class="label">MTTD (WHISPER)</div>
+                    <div class="value green" id="kpi-mttd">-15 min</div>
+                </div>
+                <div class="whisper-kpi">
+                    <div class="label">MTTR (WHISPER)</div>
+                    <div class="value green" id="kpi-mttr">1 min</div>
+                </div>
+            </div>
+            <div style="font-size:12px; color: var(--text-secondary);" id="kpi-summary">
+                Loading prevention stats...
+            </div>
+        </div>
+
+        <!-- Security Threats -->
+        <div class="panel" style="margin-top:0;">
+            <div class="panel-header">
+                <div class="panel-title" style="color: var(--crimson-glow)">
+                    Security Threats (MITRE ATT&CK)
+                </div>
+            </div>
+            <div id="security-threat-list">
+                <div class="whisper-empty">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Middle: Forecasting Charts -->
+        <div class="middle-panel">
+            <div class="service-selector">
+                <div class="service-tab active" onclick="selectService('payment-api')">payment-api</div>
+                <div class="service-tab" onclick="selectService('auth-service')">auth-service</div>
+                <div class="service-tab" onclick="selectService('database-proxy')">database-proxy</div>
+                <div class="service-tab" onclick="selectService('queue-worker')">queue-worker</div>
+            </div>
+
+            <div class="charts-container">
+                <!-- CPU chart -->
+                <div class="chart-box">
+                    <div class="chart-box-header">
+                        <div class="chart-box-title">CPU Utilization</div>
+                        <div class="chart-value-highlight" id="cpu-current-val">--%</div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="cpuChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Latency chart -->
+                <div class="chart-box">
+                    <div class="chart-box-header">
+                        <div class="chart-box-title">Request Latency</div>
+                        <div class="chart-value-highlight" id="latency-current-val">--ms</div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="latencyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Memory chart -->
+                <div class="chart-box">
+                    <div class="chart-box-header">
+                        <div class="chart-box-title">Memory Allocation</div>
+                        <div class="chart-value-highlight" id="memory-current-val">--%</div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="memoryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Errors chart -->
+                <div class="chart-box">
+                    <div class="chart-box-header">
+                        <div class="chart-box-title">Http Error Rates</div>
+                        <div class="chart-value-highlight" id="errors-current-val">--%</div>
+                    </div>
+                    <div class="chart-canvas-wrapper">
+                        <canvas id="errorsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Agent Terminal & Injection Controls -->
+        <div class="right-panel">
+            <!-- Test Control Panel -->
+            <div class="panel injector-panel">
+                <div class="panel-header">
+                    <div class="panel-title" style="color: var(--crimson-glow)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10.5 20.5 10-10a4.95 4.95 0 0 0-7-7l-10 10a4.95 4.95 0 0 0 7 7Z"/><path d="m8.5 7.5 8 8"/><path d="m17.5 12.5 4 4"/><path d="m20.5 15.5-3-3"/><path d="M2 22l4-4"/></svg>
+                        Degradation Injector
+                    </div>
+                </div>
+                <div class="injector-grid">
+                    <button class="btn btn-inject" onclick="injectDegradation('payment-api', 'cpu')">
+                        <span class="title">payment-api</span>
+                        <span>Leak Memory / CPU</span>
+                    </button>
+                    <button class="btn btn-inject" onclick="injectDegradation('database-proxy', 'latency')">
+                        <span class="title">database-proxy</span>
+                        <span>Spike Slow Queries</span>
+                    </button>
+                    <button class="btn btn-inject" onclick="injectDegradation('auth-service', 'errors')">
+                        <span class="title">auth-service</span>
+                        <span>Spike Error Rate</span>
+                    </button>
+                    <button class="btn btn-inject" onclick="injectDegradation('queue-worker', 'cpu')">
+                        <span class="title">queue-worker</span>
+                        <span>Exhaust Threadpools</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Agent Chat Console -->
+            <div class="panel chat-widget">
+                <div class="panel-header">
+                    <div class="panel-title" style="color: var(--cyan-glow)">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        WHISPER Agent Console
+                    </div>
+                </div>
+                <div class="chat-history" id="chat-history">
+                    <div class="chat-bubble agent">
+                        <h3>WHISPER AI</h3>
+                        I am monitoring telemetry indexed in Splunk and running zero-shot forecasts using a CDTSM-inspired forecasting engine. Ask me anything!
+                    </div>
+                </div>
+                <div class="chat-input-row">
+                    <input type="text" class="chat-input" id="chat-input" placeholder="Type: 'Will anything break in 60m?'..." onkeydown="if(event.key === 'Enter') sendChatMessage()">
+                    <button class="chat-send" onclick="sendChatMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom: Prevented Outages Ledger -->
+        <div class="panel ledger-panel">
+            <div class="panel-header">
+                <div class="panel-title" style="color: var(--green-glow)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Prevented Incidents Ledger
+                </div>
+            </div>
+            <div class="ledger-container" id="ledger-container">
+                <!-- Ledger logs go here -->
+                <div style="text-align: center; color: var(--text-secondary); padding: 30px; font-size: 13px;">
+                    No logs recorded. System operating normally.
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_BASE = "http://localhost:8001/api";
+        let selectedService = "payment-api";
+        let charts = {};
+
+        // Helper to initialize ChartJS
+        function createChart(canvasId, label, color, maxVal) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            
+            // Build gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, 250);
+            gradient.addColorStop(0, color.replace('1)', '0.3)'));
+            gradient.addColorStop(1, color.replace('1)', '0.0)'));
+
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Historical (Splunk)',
+                            data: [],
+                            borderColor: color,
+                            borderWidth: 2,
+                            backgroundColor: gradient,
+                            fill: true,
+                            tension: 0.2
+                        },
+                        {
+                            label: 'CTSM Forecast',
+                            data: [],
+                            borderColor: '#00f0ff',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            backgroundColor: 'transparent',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                            ticks: { color: '#8f9bb3', font: { size: 10 } }
+                        },
+                        y: {
+                            max: maxVal,
+                            grid: { color: 'rgba(255, 255, 255, 0.03)' },
+                            ticks: { color: '#8f9bb3', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize all charts
+        function initCharts() {
+            charts.cpu = createChart('cpuChart', 'CPU %', 'rgba(57, 255, 20, 1)', 100);
+            charts.latency = createChart('latencyChart', 'Latency ms', 'rgba(255, 183, 0, 1)', 3000);
+            charts.memory = createChart('memoryChart', 'Memory %', 'rgba(0, 240, 255, 1)', 100);
+            charts.errors = createChart('errorsChart', 'Errors %', 'rgba(255, 0, 85, 1)', 50);
+        }
+
+        // Tab Selection
+        function selectService(serviceName) {
+            selectedService = serviceName;
+            
+            // Toggle active classes
+            document.querySelectorAll('.service-tab').forEach(tab => {
+                if (tab.innerText === serviceName) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+
+            // Adjust y-axis scales depending on service if necessary
+            if (serviceName === 'database-proxy') {
+                charts.latency.options.scales.y.max = 6000;
+            } else {
+                charts.latency.options.scales.y.max = 2000;
+            }
+
+            fetchData();
+        }
+
+        // Fetch metrics data from API and redraw charts
+        async function fetchData() {
+            try {
+                const res = await fetch(`${API_BASE}/metrics`);
+                const data = await res.json();
+                const sData = data[selectedService];
+
+                if (!sData) return;
+
+                // Update charts
+                for (const metric of ['cpu', 'memory', 'latency', 'errors']) {
+                    const chart = charts[metric];
+                    const history = sData[metric].history_values;
+                    const times = sData[metric].history_times;
+                    
+                    // Forecast points
+                    const currentVal = history[history.length - 1] || 0;
+                    
+                    // Forecast times
+                    const fcTimes = [...times];
+                    fcTimes.push("+15m", "+30m", "+60m");
+
+                    // Align historical values with padding for forecasted labels
+                    const histData = [...history];
+                    
+                    // Align forecasted line: starts from the current last point, then projects
+                    const fcData = Array(history.length - 1).fill(null);
+                    fcData.push(currentVal);
+                    fcData.push(sData[metric].forecast_15m);
+                    fcData.push(sData[metric].forecast_30m);
+                    fcData.push(sData[metric].forecast_60m);
+
+                    chart.data.labels = fcTimes;
+                    chart.data.datasets[0].data = histData;
+                    chart.data.datasets[1].data = fcData;
+                    chart.update('none'); // silent update
+
+                    // Update values highlights
+                    const unit = metric === 'latency' ? 'ms' : '%';
+                    document.getElementById(`${metric}-current-val`).innerText = `${currentVal}${unit}`;
+                }
+            } catch (err) {
+                console.error("Error fetching metrics:", err);
+            }
+        }
+
+        // Get Pending Approvals
+        async function fetchApprovals() {
+            try {
+                const res = await fetch(`${API_BASE}/approvals`);
+                const approvals = await res.json();
+                const container = document.getElementById("approval-queue");
+
+                if (approvals.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-alerts">
+                            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+                            No alerts or breaches forecasted.
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = "";
+                for (const app of approvals) {
+                    const isCrit = app.forecasted_value >= 85 || app.metric === 'latency' && app.forecasted_value > 1500;
+                    html += `
+                        <div class="approval-card ${isCrit ? 'critical' : ''}">
+                            <div class="approval-card-header">
+                                <span class="badge-type ${isCrit ? 'critical' : 'warning'}">${isCrit ? 'Critical Outage' : 'Threshold Breach'}</span>
+                                <span class="time-counter">Impact: ${app.time_to_impact}</span>
+                            </div>
+                            <div class="approval-card-title">Impending Outage on ${app.service}</div>
+                            <div style="font-size: 13px; color: var(--text-secondary);">
+                                CDTSM-inspired Model forecasts <b>${app.metric.toUpperCase()}</b> to hit <b>${app.forecasted_value}</b>.
+                            </div>
+                            <div class="approval-card-desc">${app.brief}</div>
+                            <div class="approval-actions">
+                                <button class="btn btn-approve" onclick="approveRemediation(${app.id})">Execute Remediation</button>
+                                <button class="btn btn-dismiss" onclick="dismissRemediation(${app.id})">Dismiss</button>
+                            </div>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                console.error("Error fetching approvals:", err);
+            }
+        }
+
+        // Get Prevented Incidents Ledger
+        async function fetchLedger() {
+            try {
+                const res = await fetch(`${API_BASE}/prevented`);
+                const prevented = await res.json();
+                
+                // Update stats counter
+                document.getElementById("prevented-outages-count").innerText = prevented.length;
+                
+                const totalSavings = prevented.reduce((sum, p) => sum + p.savings, 0);
+                document.getElementById("total-savings-value").innerText = `$${totalSavings.toLocaleString()}`;
+
+                const container = document.getElementById("ledger-container");
+                if (prevented.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; color: var(--text-secondary); padding: 30px; font-size: 13px;">
+                            No logs recorded. System operating normally.
+                        </div>
+                    `;
+                    return;
+                }
+
+                let html = "";
+                for (const p of prevented) {
+                    const dateStr = new Date(p.timestamp * 1000).toLocaleTimeString();
+                    html += `
+                        <div class="ledger-row">
+                            <span class="time">${dateStr}</span>
+                            <span class="service">${p.service}</span>
+                            <span class="metric">${p.metric}</span>
+                            <span style="color: var(--text-secondary)">${p.action_taken}</span>
+                            <span class="savings">+$${p.savings.toLocaleString()}</span>
+                        </div>
+                    `;
+                }
+                container.innerHTML = html;
+            } catch (err) {
+                console.error("Error fetching ledger:", err);
+            }
+        }
+
+        // Approve Action
+        async function approveRemediation(id) {
+            try {
+                const res = await fetch(`${API_BASE}/approve/${id}`, { method: "POST" });
+                const r = await res.json();
+                
+                // Add system message to chat console
+                const chatHistory = document.getElementById("chat-history");
+                chatHistory.innerHTML += `
+                    <div class="chat-bubble agent" style="border-color: var(--green-glow); background: rgba(57, 255, 20, 0.03)">
+                        <h3>🛡️ WHISPER AUTO-HEAL</h3>
+                        Remediation script approved. Executed preventive action. The target service metrics are recovering to baseline limits. Outage avoided.
+                    </div>
+                `;
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
+                fetchApprovals();
+                fetchLedger();
+                fetchData();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Dismiss Action
+        async function dismissRemediation(id) {
+            try {
+                await fetch(`${API_BASE}/reject/${id}`, { method: "POST" });
+                fetchApprovals();
+                fetchLedger();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Inject Degradation manually
+        async function injectDegradation(service, metric) {
+            try {
+                const res = await fetch(`${API_BASE}/inject`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ service, metric })
+                });
+                const r = await res.json();
+                
+                // Add user & agent notice
+                const chatHistory = document.getElementById("chat-history");
+                chatHistory.innerHTML += `
+                    <div class="chat-bubble user">Injected ${metric.toUpperCase()} degradation on ${service}.</div>
+                    <div class="chat-bubble agent" style="border-color: var(--crimson-glow); background: rgba(255, 0, 85, 0.03)">
+                        <h3>🚨 DEGRADATION INJECTED</h3>
+                        Anomaly detected on <b>${service}</b>. CDTSM-inspired model will begin forecasting threshold breach within 60 seconds.
+                    </div>
+                `;
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+                
+                fetchData();
+                fetchApprovals();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // Chat Console Submit
+        async function sendChatMessage() {
+            const input = document.getElementById("chat-input");
+            const val = input.value.trim();
+            if (!val) return;
+
+            input.value = "";
+            const history = document.getElementById("chat-history");
+            history.innerHTML += `<div class="chat-bubble user">${val}</div>`;
+            history.scrollTop = history.scrollHeight;
+
+            try {
+                const res = await fetch(`${API_BASE}/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: val })
+                });
+                const r = await res.json();
+                
+                // Render markdown reply nicely
+                let formattedReply = r.reply
+                    .replace(/\n/g, '<br>')
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                    .replace(/\*(.*?)\*/g, '<i>$1</i>')
+                    .replace(/### (.*?)(<br>|$)/g, '<h3>$1</h3>')
+                    .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+                history.innerHTML += `
+                    <div class="chat-bubble agent">
+                        ${formattedReply}
+                    </div>
+                `;
+                history.scrollTop = history.scrollHeight;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+// ── WHISPER new panels ──────────────────────────────
+        async function fetchIntegrationBadges() {
+            try {
+                const r = await fetch(`${API_BASE}/mcp/status`).then(r => r.json());
+                const b = document.getElementById('badge-mcp');
+                if (r.connected) {
+                    b.className = 'whisper-badge ok';
+                    const calls = r.mcp_call_summary?.total_calls || 0;
+                    b.innerHTML = `<span class="dot"></span> MCP: Connected (${calls})`;
+                } else {
+                    b.className = 'whisper-badge warn';
+                    b.innerHTML = `<span class="dot"></span> MCP: REST fallback`;
+                }
+            } catch (e) {}
+            try {
+                const r = await fetch(`${API_BASE}/sdk/status`).then(r => r.json());
+                const b = document.getElementById('badge-sdk');
+                if (r.connected) {
+                    b.className = 'whisper-badge ok';
+                    b.innerHTML = `<span class="dot"></span> SDK: Connected`;
+                } else {
+                    b.className = 'whisper-badge warn';
+                    b.innerHTML = `<span class="dot"></span> SDK: not connected`;
+                }
+            } catch (e) {}
+        }
+
+        async function fetchObsKPIs() {
+            try {
+                const d = await fetch(`${API_BASE}/observability/mttd-mttr`).then(r => r.json());
+                document.getElementById('kpi-mttd').textContent = d.whisper_mttd_minutes + ' min';
+                document.getElementById('kpi-mttr').textContent = d.whisper_mttr_minutes + ' min';
+                const count = d.incidents_prevented || 0;
+                const savings = (d.total_savings_usd || 0).toLocaleString();
+                document.getElementById('kpi-summary').textContent =
+                    `${count} prevented · $${savings} saved`;
+            } catch (e) {}
+        }
+
+        async function fetchSecurityThreats() {
+            try {
+                const d = await fetch(`${API_BASE}/security`).then(r => r.json());
+                const threats = d.threats || [];
+                const c = document.getElementById('security-threat-list');
+                if (!threats.length) {
+                    c.innerHTML = '<div class="whisper-empty">No active threats detected</div>';
+                    return;
+                }
+                c.innerHTML = threats.slice(0, 5).map(t => `
+                    <div class="whisper-threat-row">
+                        <span class="whisper-sev ${t.severity}">${t.severity}</span>
+                        <div style="flex:1;">
+                            <div>${t.name}</div>
+                            <div class="whisper-mitre">${t.service} · ${t.mitre_technique}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('security-threat-list').innerHTML =
+                    '<div class="whisper-empty">Unable to load</div>';
+            }
+        }
+
+        // Polling loop
+        window.onload = () => {
+            initCharts();
+            selectService("payment-api");
+            
+            // Loop polls metrics every 4s, alerts/ledger every 8s
+            setInterval(fetchData, 4000);
+            setInterval(fetchApprovals, 8000);
+            setInterval(fetchLedger, 8000);
+            setInterval(fetchIntegrationBadges, 10000);
+            setInterval(fetchObsKPIs, 10000);
+            setInterval(fetchSecurityThreats, 10000);
+
+            // Initial load
+            fetchApprovals();
+            fetchLedger();
+            fetchIntegrationBadges();
+            fetchObsKPIs();
+            fetchSecurityThreats();
+        };
+    </script>
+</body>
+</html>

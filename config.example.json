@@ -1,0 +1,9 @@
+{
+    "SPLUNK_HOST": "localhost",
+    "SPLUNK_PORT": 8089,
+    "SPLUNK_USER": "your_splunk_username",
+    "SPLUNK_PASS": "your_splunk_password",
+    "GEMINI_API_KEY": "your_gemini_api_key",
+    "SPLUNK_HEC_TOKEN": "your_hec_token",
+    "SPLUNK_MCP_TOKEN": "your_mcp_encrypted_token"
+}
