@@ -1,7 +1,16 @@
-import requests, json, time, random, math, datetime
+import requests, json, time, random, math, datetime, os
 
 SPLUNK_HEC_URL = "https://localhost:8088/services/collector/event"
-SPLUNK_TOKEN   = "b81baa89-bc78-49aa-83c1-4d643cd248ea"
+
+# Load HEC token dynamically from config.json if available
+SPLUNK_TOKEN = "your_hec_token"
+if os.path.exists("config.json"):
+    try:
+        with open("config.json", "r") as f:
+            SPLUNK_TOKEN = json.load(f).get("SPLUNK_HEC_TOKEN", SPLUNK_TOKEN)
+    except Exception:
+        pass
+
 VERIFY_SSL     = False                    # Splunk local cert is self-signed
 
 SERVICES = ["payment-api", "auth-service", "database-proxy", "queue-worker"]

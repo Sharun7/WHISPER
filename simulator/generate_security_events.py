@@ -1,8 +1,16 @@
-import requests, json, time, random, datetime, urllib3
+import requests, json, time, random, datetime, urllib3, os
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 HEC_URL   = "https://localhost:8088/services/collector/event"
-HEC_TOKEN = "b81baa89-bc78-49aa-83c1-4d643cd248ea"  # your token
+
+# Load HEC token dynamically from config.json if available
+HEC_TOKEN = "your_hec_token"
+if os.path.exists("config.json"):
+    try:
+        with open("config.json", "r") as f:
+            HEC_TOKEN = json.load(f).get("SPLUNK_HEC_TOKEN", HEC_TOKEN)
+    except Exception:
+        pass
 
 SERVICES  = ["payment-api", "auth-service", "database-proxy", "queue-worker"]
 FAKE_IPS  = ["192.168.1."+str(i) for i in range(10,50)]
