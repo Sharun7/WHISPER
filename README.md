@@ -73,7 +73,7 @@ Trend detected → Forecast breach → AI brief generated → One-click preventi
                                                     └─────────────────────┘
 ```
 
-See `architecture.png` for the full diagram.
+![WHISPER Architecture Diagram](architecture.png)
 
 ---
 
