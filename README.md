@@ -12,7 +12,7 @@
 > turning reactive ops into predictive ops, built natively on Splunk Enterprise.
 
 **🎥 Demo Video:** [Watch on YouTube](PASTE_YOUR_VIDEO_LINK_HERE)
-**📊 Dashboard:** `http://localhost:8001` (after setup)
+**📊 Dashboard:** (After local setup, access: `http://localhost:8001`)
 **🏆 Submitted to:** Splunk Agentic Ops Hackathon — Observability Track
 
 ---
@@ -164,7 +164,7 @@ python whisper_cli.py inject database-proxy latency   # Trigger a demo degradati
 
 ## Track
 
-**Observability** (also targeting Best Use of Splunk MCP Server, Best Use of Splunk Developer Tools, Best Use of Splunk Hosted Models, Best of Platform & Developer Experience, Best of Security)
+**Observability** (also targeting Best Use of Splunk MCP Server, Best Use of Splunk Developer Tools, Best Use of Splunk Hosted Models, Best of Platform & Developer Experience)
 
 ---
 
