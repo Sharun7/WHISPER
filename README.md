@@ -11,7 +11,7 @@
 > failures 15–60 minutes BEFORE they occur and automates prevention —
 > turning reactive ops into predictive ops, built natively on Splunk Enterprise.
 
-**🎥 Demo Video:** [Watch on YouTube](PASTE_YOUR_VIDEO_LINK_HERE)
+**🎥 Demo Video:** [Watch on YouTube](https://youtu.be/LR39_b56HoA)
 **📊 Dashboard:** (After local setup, access: `http://localhost:8001`)
 **🏆 Submitted to:** Splunk Agentic Ops Hackathon — Observability Track
 
@@ -73,7 +73,7 @@ Trend detected → Forecast breach → AI brief generated → One-click preventi
                                                     └─────────────────────┘
 ```
 
-![WHISPER Architecture Diagram](architecture.png)
+![WHISPER Architecture Diagram](architecture_diagram.png)
 
 ---
 
@@ -110,7 +110,7 @@ WHISPER/
 │   └── mcp_integration_guide_1.md     # Splunk MCP integration guide & references
 ├── run_whisper.py               # One-command launcher for all components
 ├── whisper_cli.py                # Developer CLI tool
-├── architecture.png
+├── architecture_diagram.png
 ├── README.md
 └── LICENSE (MIT)
 ```
